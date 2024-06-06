@@ -28,6 +28,7 @@ module.exports = {
       directory: path.join(__dirname, "dist"),
     },
     port: port,
-    host: "0.0.0.0", // Needed for Cloud Run
+    host: "0.0.0.0",
+    allowedHosts: "all",
   },
 };

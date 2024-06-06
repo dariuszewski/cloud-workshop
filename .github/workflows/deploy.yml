@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image to Artifact Registry
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,14 +32,17 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_KEY }}
 
-      - name: Configure docker for gcr
-        run: gcloud auth configure-docker --quiet
+      - name: Configure docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
       - name: Build and push Docker image
         run: |
-          docker buildx build --platform linux/amd64 --push -t gcr.io/bubbly-monument-425111-u0/cloud-client:latest .
+          docker buildx build --platform linux/amd64 --push -t us-central1-docker.pkg.dev/bubbly-monument-425111-u0/photo-app-client/cloud-client:latest -f client/Dockerfile client
 
-      - name: Verify docker image in registry
+      - name: Deploy to Cloud Run
         run: |
-          echo "Verifying the image in the registry"
-          gcloud container images list-tags gcr.io/bubbly-monument-425111-u0/cloud-client
+          gcloud run deploy cloud-client \
+            --image us-central1-docker.pkg.dev/bubbly-monument-425111-u0/photo-app-client/cloud-client:latest \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated

@@ -1,4 +1,4 @@
-name: Deploy Cloud Function
+name: Build and Deploy Cloud Function
 
 on:
   push:
@@ -9,26 +9,36 @@ on:
       - main
 
 jobs:
-  deploy-cloud-function:
+  build-and-deploy-cloud-function:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v0.3.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
         with:
-          service_account_key: ${{ secrets.GCP_KEY }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Docker image
+        run: |
+          docker buildx build --platform linux/amd64 --push -t us-central1-docker.pkg.dev/bubbly-monument-425111-u0/photo-app-client/cloud-client:latest -f functions/list_blobs/Dockerfile .
 
       - name: Deploy Cloud Function
-        uses: google-github-actions/deploy-cloud-functions@v0.5.0
-        with:
-          name: list-blobs
-          runtime: python310
-          entry_point: list_blobs
-          source_dir: functions/list_blobs
-          region: us-central1
+        run: |
+          gcloud functions deploy list-blobs \
+            --runtime python310 \
+            --entry-point list_blobs \
+            --source functions/list_blobs \
+            --region us-central1 \
+            --trigger-http \
+            --allow-unauthenticated
         env:
-          CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_KEY }}

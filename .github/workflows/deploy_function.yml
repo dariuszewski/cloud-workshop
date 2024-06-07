@@ -1,0 +1,32 @@
+name: Deploy Cloud Function
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy-cloud-function:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy Cloud Function
+        uses: google-github-actions/deploy-cloud-functions@v0.5.0
+        with:
+          name: list-blobs
+          runtime: python310
+          entry_point: list_blobs
+          source_dir: functions/list_blobs
+          trigger: http
+          region: us-central1
+          service_account_key: ${{ secrets.GCP_KEY }}
+          exclude_files: |
+            .gitignore
+            .dockerignore
+            api-key.json

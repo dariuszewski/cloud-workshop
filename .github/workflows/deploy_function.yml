@@ -30,3 +30,5 @@ jobs:
           entry_point: list_blobs
           source_dir: functions/list_blobs
           region: us-central1
+        env:
+          CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
